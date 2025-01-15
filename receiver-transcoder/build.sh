@@ -2,4 +2,4 @@
 
 # Assemble docker image. 
 echo 'Building docker image...'
-sudo docker build . -t video-receiver
+sudo docker build . -t video-receiver-transcoder

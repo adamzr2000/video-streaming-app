@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  streamer:
+    image: video-streamer
+    container_name: video-streamer
+    privileged: true
+    tty: true
+    ports:
+      - "5554:5554/udp" # UDP stream for transcoder
+    environment:
+      - WIDTH=1920
+      - HEIGHT=1080
+      - FRAMERATE=30
+      - RECEIVER_IP=receiver-transcoder
+      - RECEIVER_PORT=5554
+      - DEVICE=/dev/video0
+    volumes:
+      - ./streamer/app:/app
+    command: python3 video_streamer_d435i.py
+    restart: always
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx
+    ports:
+      - "8890:8890/udp" # SRT
+      - "8889:8889"     # WebRTC signaling
+      - "8189:8189"     # WebRTC media
+    restart: always
+    depends_on:
+      - streamer
+
+  receiver-transcoder:
+    image: video-receiver-transcoder
+    tty: true
+    container_name: video-receiver-transcoder
+    environment:
+      - RECEIVER_PORT=5554
+      - WIDTH=1920
+      - HEIGHT=1080
+      - BITRATE=4000
+      - SPEED_PRESET=ultrafast
+      - SRT_IP=mediamtx
+      - SRT_PORT=8890
+      - STREAM_NAME=test_stream
+    depends_on:
+      - mediamtx
+    restart: always

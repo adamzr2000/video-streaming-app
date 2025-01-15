@@ -1,7 +1,7 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Install necessary packages and clean up
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
@@ -18,22 +18,21 @@ RUN apt-get update && apt-get install -y \
     gstreamer1.0-gtk3 \
     gstreamer1.0-qt5 \
     gstreamer1.0-pulseaudio \
+    gstreamer1.0-rtsp \
     libgirepository1.0-dev \
     gcc \
     libcairo2-dev \
     pkg-config \
     python3-dev \
     gir1.2-gtk-4.0 \
-    v4l-utils \
     && rm -rf /var/lib/apt/lists/*
-
 
 WORKDIR /app
 
-# COPY video_streamer.py .
+COPY video_receiver_transcoder.py .
 
-# Install RealSense Python bindings
-RUN pip3 install pyrealsense2 numpy opencv-python Flask && \
-    pip3 install pycairo PyGObject pyzmq
+# Install necessary Python packages
+RUN pip3 install pycairo PyGObject
 
-# CMD ["python", "video_streamer.py"]
+# Set the default command to run the script
+CMD ["python3", "video_receiver_transcoder.py"]

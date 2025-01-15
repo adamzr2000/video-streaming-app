@@ -1,31 +1,25 @@
 #!/bin/bash
 
 # Set environment variables
-STREAM_WIDTH=${STREAM_WIDTH:-640}
-STREAM_HEIGHT=${STREAM_HEIGHT:-480}
-FRAME_RATE=${FRAME_RATE:-30}
-BITRATE=${BITRATE:-500}
-SERVER_IP=${SERVER_IP:-127.0.0.1}
-SERVER_PORT=${SERVER_PORT:-5000}
-
-# Print the configuration
-echo "Starting the container with the following configuration:"
-echo "  STREAM_WIDTH: $STREAM_WIDTH"
-echo "  STREAM_HEIGHT: $STREAM_HEIGHT"
-echo "  FRAME_RATE: $FRAME_RATE"
-echo "  BITRATE: $BITRATE"
-echo "  SERVER_IP: $SERVER_IP"
-echo "  SERVER_PORT: $SERVER_PORT"
+WIDTH="1280"
+HEIGHT="720"
+FRAMERATE="30"
+RECEIVER_IP="127.0.0.1"
+RECEIVER_PORT="5554"
+DEVICE="/dev/video0"
 
 # Run the Docker container
-docker run --rm \
+docker run --rm -it \
   --privileged \
   --network=host \
   --name video-streamer \
-  -e STREAM_WIDTH="$STREAM_WIDTH" \
-  -e STREAM_HEIGHT="$STREAM_HEIGHT" \
-  -e FRAME_RATE="$FRAME_RATE" \
-  -e BITRATE="$BITRATE" \
-  -e SERVER_IP="$SERVER_IP" \
-  -e SERVER_PORT="$SERVER_PORT" \
-  video-streamer
+  -v ./app:/app/ \
+  --group-add video \
+  -e WIDTH="$WIDTH" \
+  -e HEIGHT="$HEIGHT" \
+  -e FRAMERATE="$FRAMERATE" \
+  -e RECEIVER_IP="$RECEIVER_IP" \
+  -e RECEIVER_PORT="$RECEIVER_PORT" \
+  -e DEVICE="$DEVICE" \
+  video-streamer \
+  python3 video_streamer_d435i.py 
