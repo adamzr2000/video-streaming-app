@@ -1,8 +1,16 @@
 #!/bin/bash
 
 # Set environment variables
-WIDTH="1280"
-HEIGHT="720"
+# WIDTH="1280"
+# HEIGHT="720"
+
+WIDTH="640"
+HEIGHT="480"
+
+# WIDTH="1920"
+# HEIGHT="1080"
+
+
 FRAMERATE="30"
 RECEIVER_IP="127.0.0.1"
 RECEIVER_PORT="5554"
@@ -22,4 +30,4 @@ docker run --rm -it \
   -e RECEIVER_PORT="$RECEIVER_PORT" \
   -e DEVICE="$DEVICE" \
   video-streamer \
-  python3 video_streamer_d435i.py 
+  python3 video_streamer.py 

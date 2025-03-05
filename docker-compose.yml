@@ -6,18 +6,18 @@ services:
     container_name: video-streamer
     privileged: true
     tty: true
-    ports:
-      - "5554:5554/udp" # UDP stream for transcoder
     environment:
-      - WIDTH=1920
-      - HEIGHT=1080
+      - WIDTH=640
+      - HEIGHT=480    
+      # - WIDTH=1920
+      # - HEIGHT=1080
       - FRAMERATE=30
       - RECEIVER_IP=receiver-transcoder
       - RECEIVER_PORT=5554
       - DEVICE=/dev/video0
     volumes:
       - ./streamer/app:/app
-    command: python3 video_streamer_d435i.py
+    command: python3 video_streamer.py
     restart: always
 
   mediamtx:
@@ -35,6 +35,8 @@ services:
     image: video-receiver-transcoder
     tty: true
     container_name: video-receiver-transcoder
+    ports:
+      - "5554:5554/udp" # UDP stream for transcoder    
     environment:
       - RECEIVER_PORT=5554
       - WIDTH=1920
@@ -46,4 +48,9 @@ services:
       - STREAM_NAME=test_stream
     depends_on:
       - mediamtx
+    volumes:
+      - ./receiver-transcoder/app:/app
+    # command: python3 video_receiver_transcoder.py
+    command: python3 test_bw2.py
     restart: always
+

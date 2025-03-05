@@ -24,4 +24,6 @@ docker run --rm -it \
   -e SRT_IP="$SRT_IP" \
   -e SRT_PORT="$SRT_PORT" \
   -e STREAM_NAME="$STREAM_NAME" \
-  video-receiver-transcoder 
+  -v ./app:/app/ \
+  video-receiver-transcoder \
+  python3 video_receiver_transcoder.py 
