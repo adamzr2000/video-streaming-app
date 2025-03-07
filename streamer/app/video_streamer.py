@@ -1,32 +1,37 @@
 import gi
 import os
 import traceback
+import logging
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
+
+# Initialize logging
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def on_message(bus, message, loop):
     """Callback for GStreamer bus messages."""
     msg_type = message.type
 
     if msg_type == Gst.MessageType.EOS:
-        print("[INFO] End of stream")
+        logger.info("End of stream")
         loop.quit()
     elif msg_type == Gst.MessageType.ERROR:
         err, debug = message.parse_error()
-        print(f"[ERROR] {err.message} ({debug})")
+        logger.error(f"{err.message} ({debug})")
         loop.quit()
     elif msg_type == Gst.MessageType.WARNING:
         warn, debug = message.parse_warning()
-        print(f"[WARNING] {warn.message} ({debug})")
+        logger.warning(f"{warn.message} ({debug})")
     elif msg_type == Gst.MessageType.STATE_CHANGED:
         old, new, _ = message.parse_state_changed()
-        print(f"[STATE] '{message.src.get_name()}' changed from {old.value_name} to {new.value_name}")
+        logger.info(f"'{message.src.get_name()}' changed from {old.value_name} to {new.value_name}")
     elif msg_type == Gst.MessageType.BUFFERING:
         percent = message.parse_buffering()
-        print(f"[BUFFERING] {percent}%")
+        logger.info(f"{percent}%")
     else:
-        print(f"[INFO] Message: {Gst.MessageType.get_name(msg_type)}")
+        logger.info(f"Message: {Gst.MessageType.get_name(msg_type)}")
 
 
 def start_streaming(device, width, height, framerate, host, port):
@@ -41,7 +46,7 @@ def start_streaming(device, width, height, framerate, host, port):
         f"udpsink host={host} port={port} sync=false"
     )
 
-    print(f"[PIPELINE] {pipeline_desc}")
+    print(f"{pipeline_desc}")
     pipeline = Gst.parse_launch(pipeline_desc)
 
     # Set up bus to handle messages
@@ -53,17 +58,17 @@ def start_streaming(device, width, height, framerate, host, port):
     try:
         # Start the pipeline
         pipeline.set_state(Gst.State.PLAYING)
-        print(f"[INFO] Streaming to {host}:{port} ... Press Ctrl+C to stop.")
+        logger.info(f"Streaming to {host}:{port} ... Press Ctrl+C to stop.")
         loop.run()
     except KeyboardInterrupt:
-        print("\n[INFO] Streaming interrupted. Shutting down...")
+        logger.info("\n[INFO] Streaming interrupted. Shutting down...")
     except Exception as e:
-        print(f"[EXCEPTION] An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
         traceback.print_exc()
     finally:
         pipeline.set_state(Gst.State.NULL)
         loop.quit()
-        print("[INFO] Pipeline shut down.")
+        logger.info("Pipeline shut down.")
 
 if __name__ == "__main__":
     # Read environment variables

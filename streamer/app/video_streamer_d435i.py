@@ -3,10 +3,14 @@ import os
 import subprocess
 import traceback
 import re
+import logging
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
 
+# Initialize logging
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def find_realsense_color_camera():
     """Automatically identify the RealSense color camera device."""
@@ -37,15 +41,15 @@ def find_realsense_color_camera():
                     text=True, capture_output=True, check=True,
                 )
                 if "YUYV" in result.stdout:
-                    print(f"[INFO] Color camera found: {device}")
+                    logger.info(f"Color camera found: {device}")
                     return device
             except subprocess.CalledProcessError:
                 pass
 
-        print("[ERROR] No RealSense color camera with YUYV format found.")
+        logger.error("No RealSense color camera with YUYV format found.")
         return None
     except Exception as e:
-        print(f"[ERROR] An error occurred during detection: {e}")
+        logger.error(f"An error occurred during detection: {e}")
         return None
 
 
@@ -54,23 +58,23 @@ def on_message(bus, message, loop):
     msg_type = message.type
 
     if msg_type == Gst.MessageType.EOS:
-        print("[INFO] End of stream")
+        logger.info("End of stream")
         loop.quit()
     elif msg_type == Gst.MessageType.ERROR:
         err, debug = message.parse_error()
-        print(f"[ERROR] {err.message} ({debug})")
+        logger.error(f"{err.message} ({debug})")
         loop.quit()
     elif msg_type == Gst.MessageType.WARNING:
         warn, debug = message.parse_warning()
-        print(f"[WARNING] {warn.message} ({debug})")
+        logger.warning(f"{warn.message} ({debug})")
     elif msg_type == Gst.MessageType.STATE_CHANGED:
         old, new, _ = message.parse_state_changed()
-        print(f"[STATE] '{message.src.get_name()}' changed from {old.value_name} to {new.value_name}")
+        logger.info(f"[STATE] '{message.src.get_name()}' changed from {old.value_name} to {new.value_name}")
     elif msg_type == Gst.MessageType.BUFFERING:
         percent = message.parse_buffering()
-        print(f"[BUFFERING] {percent}%")
+        logger.info(f"[BUFFERING] {percent}%")
     else:
-        print(f"[INFO] Message: {Gst.MessageType.get_name(msg_type)}")
+        logger.info(f"Message: {Gst.MessageType.get_name(msg_type)}")
 
 
 def start_streaming(device, width, height, framerate, host, port):
@@ -86,7 +90,7 @@ def start_streaming(device, width, height, framerate, host, port):
         f"udpsink host={host} port={port} sync=false"
     )
 
-    print(f"[PIPELINE] {pipeline_desc}")
+    logger.info(f"{pipeline_desc}")
     pipeline = Gst.parse_launch(pipeline_desc)
 
     # Set up bus to handle messages
@@ -98,24 +102,24 @@ def start_streaming(device, width, height, framerate, host, port):
     try:
         # Start the pipeline
         pipeline.set_state(Gst.State.PLAYING)
-        print(f"[INFO] Streaming to {host}:{port} ... Press Ctrl+C to stop.")
+        logger.info(f"Streaming to {host}:{port} ... Press Ctrl+C to stop.")
         loop.run()
     except KeyboardInterrupt:
-        print("\n[INFO] Streaming interrupted. Shutting down...")
+        logger.info("\nStreaming interrupted. Shutting down...")
     except Exception as e:
-        print(f"[EXCEPTION] An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
         traceback.print_exc()
     finally:
         pipeline.set_state(Gst.State.NULL)
         loop.quit()
-        print("[INFO] Pipeline shut down.")
+        logger.info("Pipeline shut down.")
 
 
 if __name__ == "__main__":
     # Detect the RealSense color camera device
     device = find_realsense_color_camera()
     if not device:
-        print("[ERROR] No suitable color camera found. Exiting.")
+        logger.error("No suitable color camera found. Exiting.")
         exit(1)
 
     # Read other environment variables

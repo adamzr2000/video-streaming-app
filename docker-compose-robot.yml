@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  streamer:
+    image: video-streamer
+    container_name: video-streamer
+    privileged: true
+    tty: true
+    environment:
+      # - WIDTH=640
+      # - HEIGHT=480    
+      - WIDTH=1920
+      - HEIGHT=1080
+      - FRAMERATE=30
+      - RECEIVER_IP=10.5.1.21
+      - RECEIVER_PORT=5554
+      - DEVICE=/dev/video0
+    volumes:
+      - ./streamer/app:/app
+    restart: always
