@@ -30,10 +30,10 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# COPY app/video_streamer.py .
+COPY app/video_streamer.py .
 
 # Install RealSense Python bindings
 RUN pip3 install pyrealsense2 numpy opencv-python Flask && \
     pip3 install pycairo PyGObject pyzmq
 
-# CMD ["python3", "video_streamer.py"]
+CMD ["python3", "video_streamer.py"]

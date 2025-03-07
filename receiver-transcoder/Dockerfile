@@ -29,10 +29,10 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# COPY app/video_streamer.py .
+COPY app/video_receiver_transcoder.py .
 
 # Install necessary Python packages
 RUN pip3 install pycairo PyGObject
 
 # Set the default command to run the script
-# CMD ["python3", "video_receiver_transcoder.py"]
+CMD ["python3", "video_receiver_transcoder.py"]

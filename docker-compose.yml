@@ -17,7 +17,6 @@ services:
       - DEVICE=/dev/video0
     volumes:
       - ./streamer/app:/app
-    command: python3 video_streamer.py
     restart: always
 
   mediamtx:
@@ -46,11 +45,10 @@ services:
       - SRT_IP=mediamtx
       - SRT_PORT=8890
       - STREAM_NAME=test_stream
+      - ENABLE_BANDWIDTH_MONITOR=false
     depends_on:
       - mediamtx
     volumes:
       - ./receiver-transcoder/app:/app
-    # command: python3 video_receiver_transcoder.py
-    command: python3 test_bw2.py
     restart: always
 

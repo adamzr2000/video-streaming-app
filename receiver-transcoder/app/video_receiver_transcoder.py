@@ -1,9 +1,14 @@
 import gi
 import os
+import time
 import traceback
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
+
+# Variables for precise bandwidth calculation
+start_time = time.perf_counter()
+accumulated_bytes = 0
 
 
 def on_message(bus, message, loop):
@@ -24,12 +29,35 @@ def on_message(bus, message, loop):
         print(f"[DEBUG] {debug}")
 
 
-def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name):
+def bandwidth_probe(pad, info):
+    """Calculates bandwidth precisely by measuring incoming buffer sizes."""
+    global start_time, accumulated_bytes
+
+    buffer = info.get_buffer()
+    if not buffer:
+        return Gst.PadProbeReturn.OK
+
+    buffer_size = buffer.get_size()
+    accumulated_bytes += buffer_size
+
+    current_time = time.perf_counter()
+    elapsed_time = current_time - start_time
+
+    if elapsed_time >= 1.0:  # Calculate bandwidth every second
+        bandwidth_mbps = (accumulated_bytes * 8) / (elapsed_time * 1_000_000)  # Convert to Mbps
+        print(f"[BANDWIDTH] Received Bandwidth: {bandwidth_mbps:.4f} Mbps")
+        accumulated_bytes = 0
+        start_time = current_time
+
+    return Gst.PadProbeReturn.OK
+
+
+def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_bandwidth_monitor):
     """Sets up the pipeline to receive MJPG, encode to H.264, and send via SRT."""
     Gst.init(None)
 
     pipeline_desc = (
-        f'udpsrc port={port} ! '
+        f'udpsrc name=source port={port} ! '
         'application/x-rtp, encoding-name=JPEG, payload=26 ! '
         'rtpjpegdepay ! '
         'jpegdec ! '
@@ -44,15 +72,29 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
         f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
     )
 
-
     print("[PIPELINE] Pipeline description:")
     print(pipeline_desc)
 
     pipeline = Gst.parse_launch(pipeline_desc)
+    if not pipeline:
+        print("[ERROR] Failed to create GStreamer pipeline.")
+        return
+
     bus = pipeline.get_bus()
     bus.add_signal_watch()
     loop = GLib.MainLoop()
     bus.connect("message", on_message, loop)
+
+    # Attach bandwidth probe only if monitoring is enabled
+    if enable_bandwidth_monitor:
+        print("[INFO] Bandwidth monitoring is ENABLED.")
+        udpsrc = pipeline.get_by_name("source")
+        if udpsrc:
+            src_pad = udpsrc.get_static_pad("src")
+            if src_pad:
+                src_pad.add_probe(Gst.PadProbeType.BUFFER, bandwidth_probe)
+    else:
+        print("[INFO] Bandwidth monitoring is DISABLED.")
 
     try:
         print("[INFO] Starting video receiver and transcoder:")
@@ -83,6 +125,9 @@ if __name__ == "__main__":
     srt_ip = os.getenv("SRT_IP", "127.0.0.1")
     srt_port = int(os.getenv("SRT_PORT", 8890))
     stream_name = os.getenv("STREAM_NAME", "my_stream")
+    
+    # Enable bandwidth monitoring only if explicitly set to "true"
+    enable_bandwidth_monitor = os.getenv("ENABLE_BANDWIDTH_MONITOR", "false").lower() == "true"
 
     print("[CONFIG] Video Receiver and Transcoder Configuration:")
     print(f"UDP Port for MJPG input: {port}")
@@ -92,7 +137,7 @@ if __name__ == "__main__":
     print(f"SRT Destination IP: {srt_ip}")
     print(f"SRT Destination Port: {srt_port}")
     print(f"Stream Name: {stream_name}")
+    print(f"Bandwidth Monitoring: {'Enabled' if enable_bandwidth_monitor else 'Disabled'}")
 
     # Start the receiver
-    start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name)
-
+    start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_bandwidth_monitor)

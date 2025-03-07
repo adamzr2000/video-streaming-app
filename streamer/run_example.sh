@@ -29,5 +29,4 @@ docker run --rm -it \
   -e RECEIVER_IP="$RECEIVER_IP" \
   -e RECEIVER_PORT="$RECEIVER_PORT" \
   -e DEVICE="$DEVICE" \
-  video-streamer \
-  python3 video_streamer.py 
+  video-streamer
