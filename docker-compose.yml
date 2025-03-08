@@ -5,7 +5,6 @@ services:
     image: video-streamer
     container_name: video-streamer
     privileged: true
-    tty: true
     environment:
       # - WIDTH=640
       # - HEIGHT=480    
@@ -32,7 +31,6 @@ services:
 
   receiver-transcoder:
     image: video-receiver-transcoder
-    tty: true
     container_name: video-receiver-transcoder
     ports:
       - "5554:5554/udp" # UDP stream for transcoder    
@@ -49,6 +47,5 @@ services:
     depends_on:
       - mediamtx
     volumes:
-      - ./receiver-transcoder/app:/app
+      - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     restart: always
-

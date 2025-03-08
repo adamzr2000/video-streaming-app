@@ -165,7 +165,13 @@ if __name__ == "__main__":
     enable_monitoring = os.getenv("ENABLE_MONITORING", "false").lower() == "true"
 
     logger.info("Video Receiver and Transcoder Configuration:")
-    logger.info(f"Monitoring: {'Enabled' if enable_monitoring else 'Disabled'}")
+    print(f"  Listening port: {port}")
+    print(f"  Resolution: {width}x{height}")
+    print(f"  Bitrate: {bitrate}")
+    print(f"  Speed preset: {speed_preset}")
+    print(f"  Mediamtx server: {srt_ip}:{srt_port}")
+    print(f"  Stream name: {stream_name}")
+    print(f"  Monitoring: {'Enabled' if enable_monitoring else 'Disabled'}")
 
     # Start the receiver
     start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring)

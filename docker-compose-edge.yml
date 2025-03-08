@@ -1,14 +1,15 @@
 version: '3.9'
 
 services:
-
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: mediamtx
+    environment:
+      - MTX_WEBRTCADDITIONALHOSTS=10.5.1.21
     ports:
-      - "8890:8890/udp" # SRT
+      - "8890:8890/udp" # SRT ingestion
       - "8889:8889"     # WebRTC signaling
-      - "8189:8189"     # WebRTC media
+      - "8189:8189/udp" # WebRTC media
     restart: always
 
   receiver-transcoder:
@@ -29,6 +30,5 @@ services:
     depends_on:
       - mediamtx
     volumes:
-      - ./receiver-transcoder/app:/app
+      - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     restart: always
-
