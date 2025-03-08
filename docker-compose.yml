@@ -6,8 +6,6 @@ services:
     container_name: video-streamer
     privileged: true
     environment:
-      # - WIDTH=640
-      # - HEIGHT=480    
       - WIDTH=1920
       - HEIGHT=1080
       - FRAMERATE=30

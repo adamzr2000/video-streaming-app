@@ -25,10 +25,8 @@ services:
       - SPEED_PRESET=ultrafast
       - SRT_IP=mediamtx
       - SRT_PORT=8890
-      - STREAM_NAME=test_stream
+      - STREAM_NAME=go1_camera
       - ENABLE_MONITORING=true
     depends_on:
       - mediamtx
-    volumes:
-      - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     restart: always

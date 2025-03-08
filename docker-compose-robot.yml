@@ -6,18 +6,12 @@ services:
     container_name: video-streamer
     privileged: true
     network_mode: "host"
-    environment:
-      # - WIDTH=640
-      # - HEIGHT=480    
-      - WIDTH=1920
-      - HEIGHT=1080
+    environment:  
       - FRAMERATE=30
       - RECEIVER_IP=10.5.1.21
       - RECEIVER_PORT=5554
-      - DEVICE=/dev/video0
       - IMAGE_FOLDER=/images
     volumes:
-      # - ./streamer/app/video_streamer.py:/app/video_streamer.py
       - ./streamer/app/backup/test_static_stream.py:/app/video_streamer.py
       - ./streamer/app/backup/images:/images
     restart: always
