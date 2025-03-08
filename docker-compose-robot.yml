@@ -5,7 +5,6 @@ services:
     image: video-streamer
     container_name: video-streamer
     privileged: true
-    tty: true
     network_mode: "host"
     environment:
       # - WIDTH=640
@@ -13,7 +12,8 @@ services:
       - WIDTH=1920
       - HEIGHT=1080
       - FRAMERATE=30
-      - RECEIVER_IP=10.5.1.21
+      # - RECEIVER_IP=10.5.1.21
+      - RECEIVER_IP=127.0.0.1
       - RECEIVER_PORT=5554
       - DEVICE=/dev/video0
     volumes:

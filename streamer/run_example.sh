@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # Set environment variables
+
+# WIDTH="1920"
+# HEIGHT="1080"
+
 # WIDTH="1280"
 # HEIGHT="720"
 
 WIDTH="640"
 HEIGHT="480"
-
-# WIDTH="1920"
-# HEIGHT="1080"
-
 
 FRAMERATE="30"
 RECEIVER_IP="127.0.0.1"

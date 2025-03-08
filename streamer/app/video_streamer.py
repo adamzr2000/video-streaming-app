@@ -3,6 +3,10 @@ import os
 import traceback
 import logging
 
+
+import subprocess
+import re
+
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
 
@@ -10,6 +14,43 @@ from gi.repository import Gst, GLib
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def find_realsense_color_camera():
+    """Automatically identify the RealSense color camera device."""
+    try:
+        result = subprocess.run(["v4l2-ctl", "--list-devices"], text=True, capture_output=True, check=True)
+        devices_output = result.stdout
+
+        realsense_devices = []
+        current_device = None
+        for line in devices_output.splitlines():
+            if "RealSense" in line:
+                current_device = []
+            elif current_device is not None:
+                match = re.search(r"/dev/video\d+", line)
+                if match:
+                    current_device.append(match.group(0))
+                if not line.strip():  # End of device section
+                    realsense_devices.extend(current_device)
+                    current_device = None
+
+        for device in realsense_devices:
+            try:
+                result = subprocess.run(
+                    ["v4l2-ctl", f"--device={device}", "--list-formats-ext"],
+                    text=True, capture_output=True, check=True,
+                )
+                if "YUYV" in result.stdout:
+                    logger.info(f"Color camera found: {device}")
+                    return device
+            except subprocess.CalledProcessError:
+                pass
+
+        logger.error("No RealSense color camera with YUYV format found.")
+        return None
+    except Exception as e:
+        logger.error(f"An error occurred during detection: {e}")
+        return None
+    
 def on_message(bus, message, loop):
     """Callback for GStreamer bus messages."""
     msg_type = message.type
@@ -34,19 +75,30 @@ def on_message(bus, message, loop):
         logger.info(f"Message: {Gst.MessageType.get_name(msg_type)}")
 
 
-def start_streaming(device, width, height, framerate, host, port):
-    """Start streaming MJPG video over UDP."""
+def start_streaming(device, width, height, framerate, host, port, use_d435i):
+    """Start streaming video over UDP."""
     Gst.init(None)
 
-    pipeline_desc = (
-        f"v4l2src device={device} ! "
-        f"image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-        "queue ! "
-        "rtpjpegpay ! "
-        f"udpsink host={host} port={port} sync=false"
-    )
+    if use_d435i:
+        pipeline_desc = (
+            f"v4l2src device={device} ! "
+            f"video/x-raw, format=YUY2, width={width}, height={height}, framerate={framerate}/1 ! "
+            "jpegenc ! "
+            "queue ! "
+            "rtpjpegpay ! "
+            f"udpsink host={host} port={port} sync=false"
+        )
+    else:
+        pipeline_desc = (
+            f"v4l2src device={device} ! "
+            f"image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
+            "queue ! "
+            "rtpjpegpay ! "
+            f"udpsink host={host} port={port} sync=false"
+        )
 
-    print(f"{pipeline_desc}")
+    logger.info("Pipeline description:")
+    print(pipeline_desc)
     pipeline = Gst.parse_launch(pipeline_desc)
 
     # Set up bus to handle messages
@@ -71,19 +123,29 @@ def start_streaming(device, width, height, framerate, host, port):
         logger.info("Pipeline shut down.")
 
 if __name__ == "__main__":
+    use_d435i = os.getenv("USE_D435I", "False").lower() == "true"
+    device = None
+    if use_d435i:
+        device = find_realsense_color_camera()
+        if not device:
+            logger.error("No suitable RealSense color camera found. Exiting.")
+            exit(1)
+    else:
+        device = os.getenv("DEVICE", "/dev/video0")
+
     # Read environment variables
-    device = os.getenv("DEVICE", "/dev/video0")
     width = int(os.getenv("WIDTH", 640))
     height = int(os.getenv("HEIGHT", 480))
     framerate = int(os.getenv("FRAMERATE", 30))
     host = os.getenv("RECEIVER_IP", "127.0.0.1")
     port = int(os.getenv("RECEIVER_PORT", 5554))
 
-    print("[CONFIG] Starting MJPG video stream with the following properties:")
+    logger.info("Starting MJPG video stream with the following properties:")
     print(f"  Device:     {device}")
     print(f"  Resolution: {width}x{height}")
     print(f"  Framerate:  {framerate}")
     print(f"  Receiver:   {host}:{port}")
+    print(f"  Use D435i:  {use_d435i}")
 
     # Pass parameters to the streaming function
-    start_streaming(device, width, height, framerate, host, port)
+    start_streaming(device, width, height, framerate, host, port, use_d435i)

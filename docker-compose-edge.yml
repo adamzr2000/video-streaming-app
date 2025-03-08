@@ -13,7 +13,6 @@ services:
 
   receiver-transcoder:
     image: video-receiver-transcoder
-    tty: true
     container_name: video-receiver-transcoder
     ports:
       - "5554:5554/udp" # UDP stream for transcoder    
