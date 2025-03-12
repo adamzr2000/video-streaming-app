@@ -10,11 +10,13 @@ services:
       - WIDTH=1920
       - HEIGHT=1080
       - FRAMERATE=30
-      - RECEIVER_IP=10.5.1.21
+      # - RECEIVER_IP=10.5.1.21
+      - RECEIVER_IP=10.11.7.4
       - RECEIVER_PORT=5554
       # - IMAGE_FOLDER=/images
       - USE_D435I=true
-    # volumes:
+    volumes:
+      - ./streamer/app/video_streamer.py:/app/video_streamer.py
     #   - ./streamer/app/backup/test_static_stream.py:/app/video_streamer.py
     #   - ./streamer/app/backup/images:/images
     restart: always
