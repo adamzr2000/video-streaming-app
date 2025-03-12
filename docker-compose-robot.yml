@@ -1,4 +1,4 @@
-version: '3.9'
+# version: '3.9'
 
 services:
   streamer:
@@ -7,16 +7,17 @@ services:
     privileged: true
     network_mode: "host"
     environment:  
-      - WIDTH=1920
-      - HEIGHT=1080
+      - WIDTH=1280
+      - HEIGHT=720
       - FRAMERATE=30
+      - RECEIVER_IP=192.168.1.166
       # - RECEIVER_IP=10.5.1.21
-      - RECEIVER_IP=10.11.7.4
+      # - RECEIVER_IP=10.11.7.4
       - RECEIVER_PORT=5554
-      # - IMAGE_FOLDER=/images
+      - IMAGE_FOLDER=/images
       - USE_D435I=true
     volumes:
-      - ./streamer/app/video_streamer.py:/app/video_streamer.py
-    #   - ./streamer/app/backup/test_static_stream.py:/app/video_streamer.py
-    #   - ./streamer/app/backup/images:/images
+      # - ./streamer/app/video_streamer.py:/app/video_streamer.py
+      - ./streamer/app/backup/test_static_stream.py:/app/video_streamer.py
+      - ./streamer/app/backup/images:/images
     restart: always

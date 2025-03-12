@@ -3,7 +3,6 @@ import os
 import traceback
 import logging
 
-
 import subprocess
 import re
 
@@ -39,7 +38,7 @@ def find_realsense_color_camera():
                     ["v4l2-ctl", f"--device={device}", "--list-formats-ext"],
                     text=True, capture_output=True, check=True,
                 )
-                if "YUYV" in result.stdout:
+                if "YUYV" in result.stdout or "MJPEG" in result.stdout:
                     logger.info(f"Color camera found: {device}")
                     return device
             except subprocess.CalledProcessError:
@@ -88,6 +87,14 @@ def start_streaming(device, width, height, framerate, host, port, use_d435i):
             "rtpjpegpay ! "
             f"udpsink host={host} port={port} sync=false"
         )
+        # pipeline_desc = (
+        #     f"v4l2src device={device} ! "
+        #     f"video/x-raw, format=YUY2, width={width}, height={height}, framerate={framerate}/1 ! "
+        #     "videoconvert ! "
+        #     "x264enc tune=zerolatency bitrate=500 speed-preset=ultrafast ! "
+        #     "rtph264pay ! "
+        #     f"udpsink host={host} port={port} sync=false"
+        # )
     else:
         pipeline_desc = (
             f"v4l2src device={device} ! "

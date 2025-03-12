@@ -101,6 +101,22 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
         'mpegtsmux alignment=7 ! '
         f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
     )
+    # h264
+    # pipeline_desc = (
+    #     f'udpsrc name=source port={port} ! '
+    #     'application/x-rtp, encoding-name=H264, payload=96 ! '
+    #     'rtph264depay ! '
+    #     'avdec_h264 name=h264_decoder ! '  # Named for FPS probe
+    #     'videoconvert ! '
+    #     'videoscale ! '
+    #     f'video/x-raw, width={width}, height={height} ! '
+    #     f'x264enc name=my_enc bitrate={bitrate} '
+    #     f'speed-preset={speed_preset} key-int-max=10 '
+    #     'bframes=0 tune=zerolatency ! '
+    #     'h264parse ! '
+    #     'mpegtsmux alignment=7 ! '
+    #     f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
+    # )  
 
     logger.info("Pipeline description:")
     print(pipeline_desc)

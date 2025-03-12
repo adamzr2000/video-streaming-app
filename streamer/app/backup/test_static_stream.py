@@ -1,7 +1,7 @@
 import gi
 import os
-import time
 import logging
+import time
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -28,22 +28,26 @@ def on_message(bus, message, loop):
         old, new, _ = message.parse_state_changed()
         logger.info(f"[STATE] '{message.src.get_name()}' changed from {old.value_name} to {new.value_name}")
 
-def start_streaming(image_folder, host, port, interval):
-    """Start streaming static images over UDP."""
+def start_streaming(image_folder, host, port, fps):
+    """Start streaming images at 30 FPS over UDP."""
     Gst.init(None)
     images = ["image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg"]
     image_index = 0
-    
+    interval = 1.0 / fps  # Frame interval
+
     while True:
         image_path = os.path.join(image_folder, images[image_index])
+
         pipeline_desc = (
             f"filesrc location={image_path} ! "
             "jpegparse ! jpegdec ! videoconvert ! "
+            "videoscale ! videorate ! "
+            "video/x-raw,framerate=30/1 ! "
             "jpegenc ! rtpjpegpay ! "
             f"udpsink host={host} port={port} sync=false"
         )
 
-        logger.info(f"Streaming image: {image_path} to {host}:{port}")
+        logger.info(f"Streaming image: {image_path} to {host}:{port} at {fps} FPS")
         pipeline = Gst.parse_launch(pipeline_desc)
 
         bus = pipeline.get_bus()
@@ -53,7 +57,7 @@ def start_streaming(image_folder, host, port, interval):
 
         try:
             pipeline.set_state(Gst.State.PLAYING)
-            time.sleep(interval)  # Stream each image for 'interval' seconds
+            time.sleep(interval)  # Ensure smooth 30 FPS stream
         except KeyboardInterrupt:
             logger.info("\nStreaming interrupted. Shutting down...")
             break
@@ -69,11 +73,11 @@ if __name__ == "__main__":
     image_folder = os.getenv("IMAGE_FOLDER", ".")
     host = os.getenv("RECEIVER_IP", "127.0.0.1")
     port = int(os.getenv("RECEIVER_PORT", 5554))
-    interval = int(os.getenv("IMAGE_INTERVAL", 2))  # Default: 2 seconds per image
+    fps = 30  # Force 30 FPS streaming
 
     print("[CONFIG] Starting image stream with the following properties:")
     print(f"  Image Folder: {image_folder}")
     print(f"  Receiver:     {host}:{port}")
-    print(f"  Interval:     {interval} sec per image")
+    print(f"  FPS:          {fps} frames per second")
 
-    start_streaming(image_folder, host, port, interval)
+    start_streaming(image_folder, host, port, fps)

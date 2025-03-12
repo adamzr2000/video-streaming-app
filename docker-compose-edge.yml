@@ -1,11 +1,12 @@
-version: '3.9'
+# version: '3.9'
 
 services:
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: mediamtx
     environment:
-      - MTX_WEBRTCADDITIONALHOSTS=10.5.1.21
+      # - MTX_WEBRTCADDITIONALHOSTS=10.5.1.21
+      - MTX_WEBRTCADDITIONALHOSTS=192.168.1.166
     ports:
       - "8890:8890/udp" # SRT ingestion
       - "8889:8889"     # WebRTC signaling

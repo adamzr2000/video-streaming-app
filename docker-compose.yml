@@ -12,7 +12,7 @@ services:
       - RECEIVER_IP=receiver-transcoder
       - RECEIVER_PORT=5554
       - DEVICE=/dev/video0
-      - USE_D435I=false
+      - USE_D435I=true
     volumes:
       - ./streamer/app:/app
     restart: always
