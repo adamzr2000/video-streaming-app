@@ -5,7 +5,7 @@ MTX_WEBRTCADDITIONALHOSTS="192.168.1.166"
 RECEIVER_PORT="5554"
 WIDTH="1920"
 HEIGHT="1080"
-BITRATE="8000"
+BITRATE="10000"
 SPEED_PRESET="ultrafast"
 SRT_IP="mediamtx"
 SRT_PORT="8890"
@@ -44,10 +44,10 @@ while [[ "$#" -gt 0 ]]; do
       STREAM_NAME="$2"
       shift 2;;
     --enable-monitoring)
-      ENABLE_MONITORING="$2"
+      ENABLE_MONITORING="true"
       shift 2;;
     --use-h264)
-      USE_H264="$2"
+      USE_H264="true"
       shift 2;;     
     --)
       shift

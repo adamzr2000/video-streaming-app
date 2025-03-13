@@ -1,0 +1,158 @@
+
+### mediamtx
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediamtx-deployment
+  labels:
+    app: video-streaming-service
+    node: mediamtx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      node: mediamtx
+  template:
+    metadata:
+      labels:
+        node: mediamtx
+    spec:
+      containers:
+      - name: mediamtx
+        tty: true
+        image: bluenviron/mediamtx:1.11.3
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: video-streaming-config
+        ports:
+        - containerPort: 8890
+          protocol: UDP
+          name: mediamtx-srt
+        - containerPort: 8189
+          name: mediamtx-webrtc-signaling
+        - containerPort: 8889
+          protocol: UDP
+          name: mediamtx-webrtc-media
+      nodeSelector:
+        nodetype: edge
+
+---
+
+### Headless service declaration so that other pods can DNS its IP address dynamically.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediamtx
+  labels:
+    app: video-streaming-service
+    node: mediamtx
+spec:
+  clusterIP: None
+  selector:
+    node: mediamtx
+
+### LoadBalancer service declaration for web access
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediamtx-frontend
+  labels:
+    app: video-streaming-service
+    node: mediamtx
+spec:
+  type: LoadBalancer
+  ports:
+    - protocol: TCP  # WebRTC signaling should be TCP
+      port: 8189
+      targetPort: 8189
+      name: webrtc-signaling
+    - protocol: UDP  # WebRTC media should be UDP
+      port: 8889
+      targetPort: 8889
+      name: webrtc-media
+  selector:
+    node: mediamtx
+
+---
+
+### video-receiver-transcoder
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-receiver-transcoder-deployment
+  labels:
+    app: video-streaming-service
+    node: video-receiver-transcoder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      node: video-receiver-transcoder
+  template:
+    metadata:
+      labels:
+        node: video-receiver-transcoder
+    spec:
+      containers:
+      - name: video-receiver-transcoder
+        tty: true
+        image: video-receiver-transcoder
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: video-streaming-config
+        ports:
+        - containerPort: 5554
+          protocol: UDP
+          name: transcoder
+      nodeSelector:
+        nodetype: edge
+
+
+---
+
+### Headless service declaration so that other pods can DNS its IP address dynamically.
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-receiver-transcoder
+  labels:
+    app: video-streaming-service
+    node: video-receiver-transcoder
+spec:
+  clusterIP: None
+  selector:
+    node: video-receiver-transcoder
+
+---
+
+### video-streamer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-streamer-deployment
+  labels:
+    app: video-streaming-service
+    node: video-streamer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      node: video-streamer
+  template:
+    metadata:
+      labels:
+        node: video-streamer
+    spec:
+      containers:
+      - name: video-streamer
+        image: video-streamer
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: video-streaming-config
+        securityContext:
+            privileged: true
+      nodeSelector:
+        nodetype: robot

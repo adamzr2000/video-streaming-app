@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: video-streaming-config
+data:
+  # Common Environment Variables
+  MTX_WEBRTCADDITIONALHOSTS: "10.5.1.21"
+
+  # Video Receiver Transcoder
+  WIDTH: "1920"
+  HEIGHT: "1080"
+  SRT_IP: "mediamtx"
+  SRT_PORT: "8890"
+  SPEED_PRESET: "ultrafast"
+  STREAM_NAME: "go1_camera"
+  ENABLE_MONITORING: "true"
+  USE_H264: "true"
+  BITRATE: "10000"
+
+  # Video Streamer
+  STREAMER_WIDTH: "1280"
+  STREAMER_HEIGHT: "720"
+  RECEIVER_IP: "video-receiver-transcoder"
+  RECEIVER_PORT: "5554"
+  USE_D435I: "true"
+  STREAMER_USE_H264: "true"
+  STREAMER_BITRATE: "4000"

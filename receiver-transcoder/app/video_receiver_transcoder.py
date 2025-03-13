@@ -68,6 +68,14 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
     Gst.init(None)
 
     if use_h264:
+        # pipeline_desc = (
+        #     f'udpsrc name=source port={port} ! '
+        #     'application/x-rtp, encoding-name=H264, payload=96 ! '
+        #     'rtph264depay ! '
+        #     'h264parse ! '  # No decoding or re-encoding
+        #     'mpegtsmux alignment=7 ! '  # Directly mux H.264 into MPEG-TS
+        #     f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
+        # )
         pipeline_desc = (
             f'udpsrc name=source port={port} ! '
             'application/x-rtp, encoding-name=H264, payload=96 ! '
@@ -172,7 +180,8 @@ if __name__ == "__main__":
     print(f"  Mediamtx server: {srt_ip}:{srt_port}")
     print(f"  Stream name: {stream_name}")
     print(f"  Monitoring: {'Enabled' if enable_monitoring else 'Disabled'}")
-    print(f"  Use H264:  {use_h264}")
+    if use_h264:
+        print("  Rceived stream is H.264 encoded.")
 
     # Start the receiver
     start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264)
