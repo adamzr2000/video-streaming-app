@@ -10,6 +10,7 @@ SRT_IP="127.0.0.1"
 SRT_PORT="8890"
 STREAM_NAME="test_stream"
 ENABLE_MONITORING="true"
+USE_H264="false"
 
 # Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
@@ -41,6 +42,9 @@ while [[ "$#" -gt 0 ]]; do
     --enable-monitoring)
       ENABLE_MONITORING="$2"
       shift 2;;
+    --use-h264)
+      USE_H264="$2"
+      shift 2;;         
     --)
       shift
       break;;
@@ -63,5 +67,6 @@ docker run --rm -it \
   -e SRT_PORT="$SRT_PORT" \
   -e STREAM_NAME="$STREAM_NAME" \
   -e ENABLE_MONITORING="$ENABLE_MONITORING" \
+  -e USE_H264="$USE_H264" \
   -v ./app:/app/ \
   video-receiver-transcoder

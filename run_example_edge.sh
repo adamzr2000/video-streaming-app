@@ -11,6 +11,7 @@ SRT_IP="mediamtx"
 SRT_PORT="8890"
 STREAM_NAME="go1_camera"
 ENABLE_MONITORING="true"
+USE_H264="false"
 
 # Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
@@ -45,6 +46,9 @@ while [[ "$#" -gt 0 ]]; do
     --enable-monitoring)
       ENABLE_MONITORING="$2"
       shift 2;;
+    --use-h264)
+      USE_H264="$2"
+      shift 2;;     
     --)
       shift
       break;;
@@ -66,6 +70,7 @@ SRT_IP=$SRT_IP
 SRT_PORT=$SRT_PORT
 STREAM_NAME=$STREAM_NAME
 ENABLE_MONITORING=$ENABLE_MONITORING
+USE_H264=$USE_H264
 EOF
 
 # Run docker-compose with updated environment

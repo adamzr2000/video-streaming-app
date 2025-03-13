@@ -24,7 +24,7 @@ docker compose down
 
 ### Edge
 ```bash
-./run_example_edge.sh --stream-name go1_camera --enable-monitoring true --webrtc-additional-hosts 10.5.1.21
+./run_example_edge.sh --stream-name go1_camera --enable-monitoring true --webrtc-additional-hosts 10.5.1.21 --use-h264 false
 ```
 
 ```bash
@@ -34,7 +34,7 @@ docker compose down
 ### Robot
 ```bash
 cd streamer
-./run_example.sh --width 1920 --height 1080 --framerate 30 --receiver-ip 10.5.1.21 --receiver-port 5554 --device /dev/video0
+./run_example.sh --width 1920 --height 1080 --framerate 30 --receiver-ip 10.5.1.21 --receiver-port 5554 --use-d435i true --use-h264 false
 ```
 
 ```bash

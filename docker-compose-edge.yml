@@ -26,6 +26,7 @@ services:
       - SRT_PORT=${SRT_PORT}
       - STREAM_NAME=${STREAM_NAME}
       - ENABLE_MONITORING=${ENABLE_MONITORING}
+      - USE_H264=${USE_H264}
     volumes:
       - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     depends_on:

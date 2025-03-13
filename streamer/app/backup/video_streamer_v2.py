@@ -106,7 +106,7 @@ def shutdown_handler(signum, frame):
     logger.info("Streaming stopped cleanly.")
     sys.exit(0)  # Properly exit without raising SystemExit exception
 
-def start_streaming_d435i(width, height, framerate, host, port, use_h264, bitrate):
+def start_streaming_d435i_v2(width, height, framerate, host, port):
     """Uses RealSense SDK and GStreamer Subprocess for stable streaming."""
     global pipeline, gst_process
 
@@ -124,24 +124,12 @@ def start_streaming_d435i(width, height, framerate, host, port, use_h264, bitrat
     logger.info(f"Serial number: {device.get_info(rs.camera_info.serial_number)}")
     logger.info(f"Firmware version: {device.get_info(rs.camera_info.firmware_version)}")
 
-
-    # Choose encoding method
-    if use_h264:
-        logger.info("Using H.264 encoding (x264enc)")
-        gst_command = (
-            f"gst-launch-1.0 -v fdsrc ! image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-            "jpegparse ! jpegdec ! queue max-size-buffers=5 max-size-bytes=500000 max-size-time=2000000000 ! "
-            f"x264enc tune=zerolatency bitrate={bitrate} speed-preset=ultrafast ! "
-            "h264parse ! rtph264pay config-interval=1 pt=96 ! "
-            f"udpsink host={host} port={port} sync=false"
-        )
-    else:
-        logger.info("Using MJPEG encoding (default)")
-        gst_command = (
-            f"gst-launch-1.0 -v fdsrc ! image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-            f"jpegparse ! queue max-size-buffers=5 max-size-bytes=500000 max-size-time=2000000000 ! rtpjpegpay ! "
-            f"udpsink host={host} port={port} sync=false"
-        )
+    # ✅ FIX: Ensure GStreamer command is a SINGLE LINE
+    gst_command = (
+        f"gst-launch-1.0 -v fdsrc ! image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
+        f"jpegparse ! queue max-size-buffers=5 max-size-bytes=500000 max-size-time=2000000000 ! rtpjpegpay ! "
+        f"udpsink host={host} port={port} sync=false"
+    )
 
     logger.info(f"Starting GStreamer pipeline:\n{gst_command}")
 
@@ -196,30 +184,55 @@ def start_streaming_d435i(width, height, framerate, host, port, use_h264, bitrat
 
         logger.info("Pipeline shut down successfully.")
 
-def start_streaming(device, width, height, framerate, host, port, use_h264, bitrate):
+def start_streaming_d435i(device, width, height, framerate, host, port):
     """Start streaming video over UDP."""
     Gst.init(None)
-    if use_h264:
-        pipeline_desc = (
-            f"v4l2src device={device} ! "
-            f"image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-            "jpegdec ! "
-            "queue ! "
-            f"x264enc tune=zerolatency bitrate={bitrate} speed-preset=ultrafast ! "
-            "h264parse ! "
-            "rtph264pay config-interval=1 pt=96 ! "
-            f"udpsink host={host} port={port} sync=false"
-        )
-        
-    else:
-        pipeline_desc = (
-            f"v4l2src device={device} ! "
-            f"image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-            "queue ! "
-            "rtpjpegpay ! "
-            f"udpsink host={host} port={port} sync=false"
-        )
 
+    pipeline_desc = (
+        f"v4l2src device={device} ! "
+        f"video/x-raw, format=YUY2, width={width}, height={height}, framerate={framerate}/1 ! "
+        "jpegenc ! "
+        "queue ! "
+        "rtpjpegpay ! "
+        f"udpsink host={host} port={port} sync=false"
+    )
+
+    logger.info("Pipeline description:")
+    print(pipeline_desc)
+    pipeline = Gst.parse_launch(pipeline_desc)
+
+    # Set up bus to handle messages
+    bus = pipeline.get_bus()
+    bus.add_signal_watch()
+    loop = GLib.MainLoop()
+    bus.connect("message", on_message, loop)
+
+    try:
+        # Start the pipeline
+        pipeline.set_state(Gst.State.PLAYING)
+        logger.info(f"Streaming to {host}:{port} ... Press Ctrl+C to stop.")
+        loop.run()
+    except KeyboardInterrupt:
+        logger.info("\n[INFO] Streaming interrupted. Shutting down...")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        traceback.print_exc()
+    finally:
+        pipeline.set_state(Gst.State.NULL)
+        loop.quit()
+        logger.info("Pipeline shut down.")
+
+def start_streaming(device, width, height, framerate, host, port):
+    """Start streaming video over UDP."""
+    Gst.init(None)
+
+    pipeline_desc = (
+        f"v4l2src device={device} ! "
+        f"image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
+        "queue ! "
+        "rtpjpegpay ! "
+        f"udpsink host={host} port={port} sync=false"
+    )
 
     logger.info("Pipeline description:")
     print(pipeline_desc)
@@ -248,8 +261,6 @@ def start_streaming(device, width, height, framerate, host, port, use_h264, bitr
 
 if __name__ == "__main__":
     use_d435i = os.getenv("USE_D435I", "False").lower() == "true"
-    use_h264 = os.getenv("USE_H264", "False").lower() == "true"
-
     device = None
     if use_d435i:
         device = find_realsense_color_camera()
@@ -265,7 +276,6 @@ if __name__ == "__main__":
     framerate = int(os.getenv("FRAMERATE", 30))
     host = os.getenv("RECEIVER_IP", "127.0.0.1")
     port = int(os.getenv("RECEIVER_PORT", 5554))
-    bitrate = int(os.getenv("BITRATE", 2000))
 
     logger.info("Starting MJPG video stream with the following properties:")
     print(f"  Device:     {device}")
@@ -273,12 +283,9 @@ if __name__ == "__main__":
     print(f"  Framerate:  {framerate}")
     print(f"  Receiver:   {host}:{port}")
     print(f"  Use D435i:  {use_d435i}")
-    if use_h264:
-        print(f"  Use H264:  {use_h264}")
-        print(f"  Bitrate:  {bitrate}")
-
 
     if use_d435i:
-        start_streaming_d435i(width, height, framerate, host, port, use_h264, bitrate)
+        # start_streaming_d435i(device, width, height, framerate, host, port)
+        start_streaming_d435i_v2(width, height, framerate, host, port)
     else:
-        start_streaming(device, width, height, framerate, host, port, use_h264, bitrate)
+        start_streaming(device, width, height, framerate, host, port)

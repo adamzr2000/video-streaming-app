@@ -63,25 +63,43 @@ def monitoring_probe(pad, info, is_fps=False):
 
     return Gst.PadProbeReturn.OK
 
-def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring):
+def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264):
     """Sets up the GStreamer pipeline for video reception and transcoding."""
     Gst.init(None)
 
-    pipeline_desc = (
-        f'udpsrc name=source port={port} ! '
-        'application/x-rtp, encoding-name=JPEG, payload=26 ! '
-        'rtpjpegdepay ! '
-        'jpegdec name=jpeg_decoder ! '  # Named for FPS probe
-        'videoconvert ! '
-        'videoscale ! '
-        f'video/x-raw, width={width}, height={height} ! '
-        f'x264enc name=my_enc bitrate={bitrate} '
-        f'speed-preset={speed_preset} key-int-max=10 '
-        'bframes=0 tune=zerolatency ! '
-        'h264parse ! '
-        'mpegtsmux alignment=7 ! '
-        f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
-    )
+    if use_h264:
+        pipeline_desc = (
+            f'udpsrc name=source port={port} ! '
+            'application/x-rtp, encoding-name=H264, payload=96 ! '
+            'rtph264depay ! '
+            'h264parse ! '
+            'avdec_h264 ! '  # H.264 decoder
+            'videoconvert ! '
+            'videoscale ! '
+            f'video/x-raw, width={width}, height={height} ! '
+            f'x264enc name=my_enc bitrate={bitrate} '
+            f'speed-preset={speed_preset} key-int-max=10 '
+            'bframes=0 tune=zerolatency ! '
+            'h264parse ! '
+            'mpegtsmux alignment=7 ! '
+            f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
+        )
+    else:
+        pipeline_desc = (
+            f'udpsrc name=source port={port} ! '
+            'application/x-rtp, encoding-name=JPEG, payload=26 ! '
+            'rtpjpegdepay ! '
+            'jpegdec name=jpeg_decoder ! '  # Named for FPS probe
+            'videoconvert ! '
+            'videoscale ! '
+            f'video/x-raw, width={width}, height={height} ! '
+            f'x264enc name=my_enc bitrate={bitrate} '
+            f'speed-preset={speed_preset} key-int-max=10 '
+            'bframes=0 tune=zerolatency ! '
+            'h264parse ! '
+            'mpegtsmux alignment=7 ! '
+            f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
+        )
 
     logger.info("Pipeline description:")
     print(pipeline_desc)
@@ -133,6 +151,7 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
 
 if __name__ == "__main__":
     # Read environment variables
+    use_h264 = os.getenv("USE_H264", "False").lower() == "true"
     port = int(os.getenv("RECEIVER_PORT", 5554))
     width = int(os.getenv("WIDTH", 640))
     height = int(os.getenv("HEIGHT", 480))
@@ -153,6 +172,7 @@ if __name__ == "__main__":
     print(f"  Mediamtx server: {srt_ip}:{srt_port}")
     print(f"  Stream name: {stream_name}")
     print(f"  Monitoring: {'Enabled' if enable_monitoring else 'Disabled'}")
+    print(f"  Use H264:  {use_h264}")
 
     # Start the receiver
-    start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring)
+    start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264)

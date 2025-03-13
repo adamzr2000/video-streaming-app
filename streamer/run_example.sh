@@ -8,6 +8,8 @@ RECEIVER_IP="127.0.0.1"
 RECEIVER_PORT="5554"
 DEVICE="/dev/video0"
 USE_D435I="false"
+USE_H264="false"
+BITRATE="2000"
 
 # Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
@@ -33,6 +35,12 @@ while [[ "$#" -gt 0 ]]; do
     --use-d435i)
       USE_D435I="$2"
       shift 2;;
+    --use-h264)
+      USE_H264="$2"
+      shift 2;;      
+    --bitrate)
+      BITRATE="$2"
+      shift 2;;      
     --)
       shift
       break;;
@@ -55,4 +63,6 @@ docker run --rm -it \
   -e RECEIVER_PORT="$RECEIVER_PORT" \
   -e DEVICE="$DEVICE" \
   -e USE_D435I="$USE_D435I" \
+  -e USE_H264="$USE_H264" \
+  -e BITRATE="$BITRATE" \
   video-streamer
