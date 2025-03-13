@@ -36,4 +36,4 @@ COPY app/video_streamer.py .
 RUN pip3 install pyrealsense2 numpy opencv-python Flask && \
     pip3 install pycairo PyGObject pyzmq
 
-CMD ["python3", "video_streamer.py"]
+CMD ["python3", "-u", "video_streamer.py"]

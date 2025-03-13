@@ -1,19 +1,23 @@
 #!/bin/bash
 
 # Default values
+MTX_WEBRTCADDITIONALHOSTS="192.168.1.166"
 RECEIVER_PORT="5554"
-WIDTH="1280"
-HEIGHT="720"
-BITRATE="2000"
+WIDTH="1920"
+HEIGHT="1080"
+BITRATE="4000"
 SPEED_PRESET="ultrafast"
-SRT_IP="127.0.0.1"
+SRT_IP="mediamtx"
 SRT_PORT="8890"
-STREAM_NAME="test_stream"
+STREAM_NAME="go1_camera"
 ENABLE_MONITORING="true"
 
 # Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+    --webrtc-additional-hosts)
+      MTX_WEBRTCADDITIONALHOSTS="$2"
+      shift 2;;
     --receiver-port)
       RECEIVER_PORT="$2"
       shift 2;;
@@ -50,18 +54,19 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-# Run the Docker container
-docker run --rm -it \
-  --name video-receiver-transcoder \
-  -p "${RECEIVER_PORT}:${RECEIVER_PORT}/udp" \
-  -e RECEIVER_PORT="$RECEIVER_PORT" \
-  -e WIDTH="$WIDTH" \
-  -e HEIGHT="$HEIGHT" \
-  -e BITRATE="$BITRATE" \
-  -e SPEED_PRESET="$SPEED_PRESET" \
-  -e SRT_IP="$SRT_IP" \
-  -e SRT_PORT="$SRT_PORT" \
-  -e STREAM_NAME="$STREAM_NAME" \
-  -e ENABLE_MONITORING="$ENABLE_MONITORING" \
-  -v ./app:/app/ \
-  video-receiver-transcoder
+# Overwrite .env file with updated values
+cat << EOF > .env
+MTX_WEBRTCADDITIONALHOSTS=$MTX_WEBRTCADDITIONALHOSTS
+RECEIVER_PORT=$RECEIVER_PORT
+WIDTH=$WIDTH
+HEIGHT=$HEIGHT
+BITRATE=$BITRATE
+SPEED_PRESET=$SPEED_PRESET
+SRT_IP=$SRT_IP
+SRT_PORT=$SRT_PORT
+STREAM_NAME=$STREAM_NAME
+ENABLE_MONITORING=$ENABLE_MONITORING
+EOF
+
+# Run docker-compose with updated environment
+docker compose -f docker-compose-edge.yml up -d

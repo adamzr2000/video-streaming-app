@@ -31,7 +31,7 @@ def on_message(bus, message, loop):
 def start_streaming(image_folder, host, port, fps):
     """Start streaming images at 30 FPS over UDP."""
     Gst.init(None)
-    images = ["image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg"]
+    images = ["image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg", "image6.jpg"]
     image_index = 0
     interval = 1.0 / fps  # Frame interval
 
@@ -42,7 +42,7 @@ def start_streaming(image_folder, host, port, fps):
             f"filesrc location={image_path} ! "
             "jpegparse ! jpegdec ! videoconvert ! "
             "videoscale ! videorate ! "
-            "video/x-raw,framerate=30/1 ! "
+            "video/x-raw,width=1920,height=1080,framerate=30/1 ! "
             "jpegenc ! rtpjpegpay ! "
             f"udpsink host={host} port={port} sync=false"
         )
@@ -57,7 +57,8 @@ def start_streaming(image_folder, host, port, fps):
 
         try:
             pipeline.set_state(Gst.State.PLAYING)
-            time.sleep(interval)  # Ensure smooth 30 FPS stream
+            for _ in range(fps):  # Send each image 30 times (1 second duration)
+                time.sleep(interval)
         except KeyboardInterrupt:
             logger.info("\nStreaming interrupted. Shutting down...")
             break

@@ -3,6 +3,7 @@ import os
 import time
 import traceback
 import logging
+from functools import partial
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -12,6 +13,8 @@ bw_start_time = time.perf_counter()
 fps_start_time = time.perf_counter()
 accumulated_bytes = 0
 frame_count = 0  
+MONITOR_INTERVAL = 1.0
+
 
 # Initialize logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -34,51 +37,29 @@ def on_message(bus, message, loop):
         logger.warning(f"{warn.message}")
         logger.info(f"{debug}")
 
-def bandwidth_probe(pad, info):
-    """Measures incoming RTP bandwidth (before decoding)."""
-    global bw_start_time, accumulated_bytes
+def monitoring_probe(pad, info, is_fps=False):
+    global bw_start_time, fps_start_time, accumulated_bytes, frame_count
 
     buffer = info.get_buffer()
     if not buffer:
         return Gst.PadProbeReturn.OK
 
-    accumulated_bytes += buffer.get_size()
-
-    # Check elapsed time
     current_time = time.perf_counter()
-    elapsed_time = current_time - bw_start_time
 
-    if elapsed_time >= 1.0:  # Every second
-        bandwidth_mbps = (accumulated_bytes * 8) / (elapsed_time * 1_000_000)  # Convert to Mbps
-        logger.info(f"Received Bandwidth: {bandwidth_mbps:.2f} Mbps")
-
-        # Reset counters
-        accumulated_bytes = 0
-        bw_start_time = current_time
-
-    return Gst.PadProbeReturn.OK
-
-def fps_probe(pad, info):
-    """Measures FPS (only full decoded frames)."""
-    global fps_start_time, frame_count
-
-    buffer = info.get_buffer()
-    if not buffer:
-        return Gst.PadProbeReturn.OK
-
-    frame_count += 1  # Count full decoded frames
-
-    # Check elapsed time
-    current_time = time.perf_counter()
-    elapsed_time = current_time - fps_start_time
-
-    if elapsed_time >= 1.0:  # Every second
-        fps = frame_count / elapsed_time
-        logger.info(f"Received Frames per Second: {fps:.2f} FPS")
-
-        # Reset counters
-        frame_count = 0
-        fps_start_time = current_time
+    if is_fps:
+        frame_count += 1
+        if current_time - fps_start_time >= MONITOR_INTERVAL:
+            fps = frame_count / (current_time - fps_start_time)
+            logger.info(f"FPS: {fps:.2f}")
+            frame_count = 0
+            fps_start_time = current_time
+    else:
+        accumulated_bytes += buffer.get_size()
+        if current_time - bw_start_time >= MONITOR_INTERVAL:
+            bandwidth_mbps = (accumulated_bytes * 8) / ((current_time - bw_start_time) * 1_000_000)
+            logger.info(f"Bandwidth: {bandwidth_mbps:.2f} Mbps")
+            accumulated_bytes = 0
+            bw_start_time = current_time
 
     return Gst.PadProbeReturn.OK
 
@@ -101,22 +82,6 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
         'mpegtsmux alignment=7 ! '
         f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
     )
-    # h264
-    # pipeline_desc = (
-    #     f'udpsrc name=source port={port} ! '
-    #     'application/x-rtp, encoding-name=H264, payload=96 ! '
-    #     'rtph264depay ! '
-    #     'avdec_h264 name=h264_decoder ! '  # Named for FPS probe
-    #     'videoconvert ! '
-    #     'videoscale ! '
-    #     f'video/x-raw, width={width}, height={height} ! '
-    #     f'x264enc name=my_enc bitrate={bitrate} '
-    #     f'speed-preset={speed_preset} key-int-max=10 '
-    #     'bframes=0 tune=zerolatency ! '
-    #     'h264parse ! '
-    #     'mpegtsmux alignment=7 ! '
-    #     f'srtsink uri="srt://{srt_ip}:{srt_port}?streamid=publish:{stream_name}" sync=false'
-    # )  
 
     logger.info("Pipeline description:")
     print(pipeline_desc)
@@ -140,14 +105,14 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
         if udpsrc:
             src_pad = udpsrc.get_static_pad("src")
             if src_pad:
-                src_pad.add_probe(Gst.PadProbeType.BUFFER, bandwidth_probe)
+                src_pad.add_probe(Gst.PadProbeType.BUFFER, partial(monitoring_probe, is_fps=False))
 
         # FPS probe (after decoding)
         jpegdec = pipeline.get_by_name("jpeg_decoder")
         if jpegdec:
             src_pad = jpegdec.get_static_pad("src")
             if src_pad:
-                src_pad.add_probe(Gst.PadProbeType.BUFFER, fps_probe)
+                src_pad.add_probe(Gst.PadProbeType.BUFFER, partial(monitoring_probe, is_fps=True))
 
     else:
         logger.info("Monitoring is DISABLED.")

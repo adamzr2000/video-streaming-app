@@ -12,7 +12,7 @@ services:
       - RECEIVER_IP=receiver-transcoder
       - RECEIVER_PORT=5554
       - DEVICE=/dev/video0
-      - USE_D435I=true
+      - USE_D435I=false
     volumes:
       - ./streamer/app:/app
     restart: always
@@ -45,6 +45,4 @@ services:
       - ENABLE_MONITORING=true
     depends_on:
       - mediamtx
-    volumes:
-      - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     restart: always

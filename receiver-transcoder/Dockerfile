@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.8-slim
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -35,4 +35,4 @@ COPY app/video_receiver_transcoder.py .
 RUN pip3 install pycairo PyGObject
 
 # Set the default command to run the script
-CMD ["python3", "video_receiver_transcoder.py"]
+CMD ["python3", "-u", "video_receiver_transcoder.py"]

@@ -1,37 +1,17 @@
 #!/bin/bash
 
 # Default values
-WIDTH="1280"
-HEIGHT="720"
-FRAMERATE="30"
 RECEIVER_IP="127.0.0.1"
 RECEIVER_PORT="5554"
-DEVICE="/dev/video0"
-USE_D435I="false"
 
 # Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
-    --width)
-      WIDTH="$2"
-      shift 2;;
-    --height)
-      HEIGHT="$2"
-      shift 2;;
-    --framerate)
-      FRAMERATE="$2"
-      shift 2;;
     --receiver-ip)
       RECEIVER_IP="$2"
       shift 2;;
     --receiver-port)
       RECEIVER_PORT="$2"
-      shift 2;;
-    --device)
-      DEVICE="$2"
-      shift 2;;
-    --use-d435i)
-      USE_D435I="$2"
       shift 2;;
     --)
       shift
@@ -46,13 +26,9 @@ done
 docker run --rm -it \
   --privileged \
   --name video-streamer \
-  -v ./app:/app/ \
-  --group-add video \
-  -e WIDTH="$WIDTH" \
-  -e HEIGHT="$HEIGHT" \
-  -e FRAMERATE="$FRAMERATE" \
+  -v ./app/backup/test_static_stream.py:/app/video_streamer.py \
+  -v ./app/backup/images:/images \
   -e RECEIVER_IP="$RECEIVER_IP" \
   -e RECEIVER_PORT="$RECEIVER_PORT" \
-  -e DEVICE="$DEVICE" \
-  -e USE_D435I="$USE_D435I" \
+  -e IMAGE_FOLDER="/images" \
   video-streamer

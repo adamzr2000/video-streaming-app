@@ -1,12 +1,10 @@
 # version: '3.9'
-
 services:
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: mediamtx
     environment:
-      # - MTX_WEBRTCADDITIONALHOSTS=10.5.1.21
-      - MTX_WEBRTCADDITIONALHOSTS=192.168.1.166
+      - MTX_WEBRTCADDITIONALHOSTS=${MTX_WEBRTCADDITIONALHOSTS}
     ports:
       - "8890:8890/udp" # SRT ingestion
       - "8889:8889"     # WebRTC signaling
@@ -19,15 +17,17 @@ services:
     ports:
       - "5554:5554/udp" # UDP stream for transcoder    
     environment:
-      - RECEIVER_PORT=5554
-      - WIDTH=1920
-      - HEIGHT=1080
-      - BITRATE=4000
-      - SPEED_PRESET=ultrafast
-      - SRT_IP=mediamtx
-      - SRT_PORT=8890
-      - STREAM_NAME=go1_camera
-      - ENABLE_MONITORING=true
+      - RECEIVER_PORT=${RECEIVER_PORT}
+      - WIDTH=${WIDTH}
+      - HEIGHT=${HEIGHT}
+      - BITRATE=${BITRATE}
+      - SPEED_PRESET=${SPEED_PRESET}
+      - SRT_IP=${SRT_IP}
+      - SRT_PORT=${SRT_PORT}
+      - STREAM_NAME=${STREAM_NAME}
+      - ENABLE_MONITORING=${ENABLE_MONITORING}
+    volumes:
+      - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     depends_on:
       - mediamtx
     restart: always
