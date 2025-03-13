@@ -124,14 +124,13 @@ def start_streaming_d435i(width, height, framerate, host, port, use_h264, bitrat
     logger.info(f"Serial number: {device.get_info(rs.camera_info.serial_number)}")
     logger.info(f"Firmware version: {device.get_info(rs.camera_info.firmware_version)}")
 
-
     # Choose encoding method
     if use_h264:
         logger.info("Using H.264 encoding (x264enc)")
         gst_command = (
             f"gst-launch-1.0 -v fdsrc ! image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-            "jpegparse ! jpegdec ! queue max-size-buffers=5 max-size-bytes=500000 max-size-time=2000000000 ! "
-            f"x264enc tune=zerolatency bitrate={bitrate} speed-preset=ultrafast ! "
+            "jpegparse ! jpegdec ! queue ! "
+            f"x264enc bframes=0 tune=zerolatency bitrate={bitrate} speed-preset=ultrafast key-int-max=10 ! "
             "h264parse ! rtph264pay config-interval=1 pt=96 ! "
             f"udpsink host={host} port={port} sync=false"
         )
@@ -205,7 +204,7 @@ def start_streaming(device, width, height, framerate, host, port, use_h264, bitr
             f"image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
             "jpegdec ! "
             "queue ! "
-            f"x264enc tune=zerolatency bitrate={bitrate} speed-preset=ultrafast ! "
+            f"x264enc bframes=0 tune=zerolatency bitrate={bitrate} speed-preset=ultrafast key-int-max=10 ! "
             "h264parse ! "
             "rtph264pay config-interval=1 pt=96 ! "
             f"udpsink host={host} port={port} sync=false"

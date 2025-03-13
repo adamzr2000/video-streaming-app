@@ -32,9 +32,15 @@ docker compose down
 ```
 
 ### Robot
+
 ```bash
 cd streamer
 ./run_example.sh --width 1920 --height 1080 --framerate 30 --receiver-ip 10.5.1.21 --receiver-port 5554 --use-d435i true --use-h264 false
+```
+
+```bash
+cd streamer
+./run_example.sh --width 1280 --height 720 --framerate 30 --receiver-ip 10.5.1.21 --receiver-port 5554 --use-d435i true --use-h264 true --bitrate 4000
 ```
 
 ```bash
