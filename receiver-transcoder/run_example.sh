@@ -41,10 +41,10 @@ while [[ "$#" -gt 0 ]]; do
       shift 2;;
     --enable-monitoring)
       ENABLE_MONITORING="true"
-      shift 2;;
+      shift ;;
     --use-h264)
       USE_H264="true"
-      shift 2;;         
+      shift ;;         
     --)
       shift
       break;;

@@ -34,10 +34,10 @@ while [[ "$#" -gt 0 ]]; do
       shift 2;;
     --use-d435i)
       USE_D435I="true"
-      shift 2;;
+      shift ;;
     --use-h264)
       USE_H264="true"
-      shift 2;;      
+      shift ;;      
     --bitrate)
       BITRATE="$2"
       shift 2;;      
