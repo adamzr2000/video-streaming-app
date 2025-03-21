@@ -129,8 +129,8 @@ def start_streaming_d435i(width, height, framerate, host, port, use_h264, bitrat
         logger.info("Using H.264 encoding (x264enc)")
         gst_command = (
             f"gst-launch-1.0 -v fdsrc ! image/jpeg, width={width}, height={height}, framerate={framerate}/1 ! "
-            "jpegparse ! jpegdec ! queue ! "
-            f"x264enc bframes=0 tune=zerolatency bitrate={bitrate} speed-preset=ultrafast key-int-max=10 ! "
+            "jpegparse ! jpegdec ! video/x-raw,format=I420 ! queue ! "
+            f"x264enc bframes=0 tune=zerolatency byte-stream=true bitrate={bitrate} speed-preset=ultrafast key-int-max=10 ! "
             "h264parse ! rtph264pay config-interval=1 pt=96 ! "
             f"udpsink host={host} port={port} sync=false"
         )
