@@ -1,78 +1,69 @@
-
 ### mediamtx
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mediamtx-deployment
   labels:
-    app: video-streaming-service
-    node: mediamtx
+    app: mediamtx
 spec:
   replicas: 1
   selector:
     matchLabels:
-      node: mediamtx
+      app: mediamtx
   template:
     metadata:
       labels:
-        node: mediamtx
+        app: mediamtx
     spec:
       containers:
       - name: mediamtx
         tty: true
         image: bluenviron/mediamtx:1.11.3
         imagePullPolicy: IfNotPresent
-        envFrom:
-          - configMapRef:
-              name: video-streaming-config
+        env:
+        - name: MTX_WEBRTCADDITIONALHOSTS
+          value: "10.5.1.21"
         ports:
         - containerPort: 8890
           protocol: UDP
-          name: mediamtx-srt
+          name: srt
         - containerPort: 8189
-          name: mediamtx-webrtc-signaling
-        - containerPort: 8889
           protocol: UDP
-          name: mediamtx-webrtc-media
+          name: webrtc-signal
+        - containerPort: 8889
+          name: webrtc-media
       nodeSelector:
         nodetype: edge
 
 ---
 
-### Headless service declaration so that other pods can DNS its IP address dynamically.
 apiVersion: v1
 kind: Service
 metadata:
   name: mediamtx
   labels:
-    app: video-streaming-service
-    node: mediamtx
+    app: mediamtx
 spec:
   clusterIP: None
   selector:
-    node: mediamtx
+    app: mediamtx
 
-### LoadBalancer service declaration for web access
+---
+
 apiVersion: v1
 kind: Service
 metadata:
   name: mediamtx-frontend
   labels:
-    app: video-streaming-service
-    node: mediamtx
+    app: mediamtx
 spec:
   type: LoadBalancer
   ports:
-    - protocol: TCP  # WebRTC signaling should be TCP
-      port: 8189
-      targetPort: 8189
-      name: webrtc-signaling
-    - protocol: UDP  # WebRTC media should be UDP
-      port: 8889
-      targetPort: 8889
-      name: webrtc-media
+  - port: 8889
+    targetPort: 8889
+    name: webrtc-media
   selector:
-    node: mediamtx
+    app: mediamtx
 
 ---
 
@@ -82,17 +73,16 @@ kind: Deployment
 metadata:
   name: video-receiver-transcoder-deployment
   labels:
-    app: video-streaming-service
-    node: video-receiver-transcoder
+    app: receiver-transcoder
 spec:
   replicas: 1
   selector:
     matchLabels:
-      node: video-receiver-transcoder
+      app: receiver-transcoder
   template:
     metadata:
       labels:
-        node: video-receiver-transcoder
+        app: receiver-transcoder
     spec:
       containers:
       - name: video-receiver-transcoder
@@ -100,8 +90,8 @@ spec:
         image: video-receiver-transcoder
         imagePullPolicy: IfNotPresent
         envFrom:
-          - configMapRef:
-              name: video-streaming-config
+        - configMapRef:
+            name: receiver-config        
         ports:
         - containerPort: 5554
           protocol: UDP
@@ -109,50 +99,66 @@ spec:
       nodeSelector:
         nodetype: edge
 
-
 ---
 
-### Headless service declaration so that other pods can DNS its IP address dynamically.
 apiVersion: v1
 kind: Service
 metadata:
   name: video-receiver-transcoder
   labels:
-    app: video-streaming-service
-    node: video-receiver-transcoder
+    app: receiver-transcoder
 spec:
   clusterIP: None
   selector:
-    node: video-receiver-transcoder
+    app: receiver-transcoder
 
 ---
 
-### video-streamer
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
-  name: video-streamer-deployment
+  name: receiver-transcoder-lb
   labels:
-    app: video-streaming-service
-    node: video-streamer
+    app: receiver-transcoder
 spec:
-  replicas: 1
+  type: LoadBalancer
+  ports:
+  - port: 5554
+    protocol: UDP
+    targetPort: 5554
+    name: transcoder
   selector:
-    matchLabels:
-      node: video-streamer
-  template:
-    metadata:
-      labels:
-        node: video-streamer
-    spec:
-      containers:
-      - name: video-streamer
-        image: video-streamer
-        imagePullPolicy: IfNotPresent
-        envFrom:
-          - configMapRef:
-              name: video-streaming-config
-        securityContext:
-            privileged: true
-      nodeSelector:
-        nodetype: robot
+    app: receiver-transcoder
+
+---
+
+# ---
+
+# ### video-streamer
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: video-streamer-deployment
+#   labels:
+#     app: video-streamer
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: video-streamer
+#   template:
+#     metadata:
+#       labels:
+#         app: video-streamer
+#     spec:
+#       containers:
+#       - name: video-streamer
+#         image: video-streamer
+#         imagePullPolicy: IfNotPresent
+#         envFrom:
+#         - configMapRef:
+#             name: streamer-config
+#         securityContext:
+#           privileged: true
+#       nodeSelector:
+#         nodetype: robot

@@ -8,8 +8,8 @@ data:
   RECEIVER_IP: "video-receiver-transcoder"
   RECEIVER_PORT: "5554"
   USE_D435I: "true"
-  USE_H264: "false"
-  FRAMERATE: "30"
+  USE_H264: "true"
+  BITRATE: "4000"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -23,5 +23,5 @@ data:
   SPEED_PRESET: "ultrafast"
   STREAM_NAME: "go1_camera"
   ENABLE_MONITORING: "true"
-  USE_H264: "false"
+  USE_H264: "true"
   BITRATE: "10000"
