@@ -1,4 +1,4 @@
-# Video Streaming System
+# Low Latency Video Streaming App
 
 **Author:** Adam Zahir Rodriguez
 
@@ -25,7 +25,7 @@ docker compose down
 ## **Usage (5TONIC Setup)**  
 
 ### **Using MJPEG Encoding**  
-#### **Edge (Receiver-Transcoder)**
+#### **Edge Server (Receiver-Transcoder)**
 ```bash
 ./run_example_edge.sh --stream-name go1_camera --enable-monitoring --webrtc-additional-hosts 10.5.1.21
 ```
@@ -37,7 +37,7 @@ docker compose down
 #### **Robot (Streamer)**
 ```bash
 cd streamer
-./run_example.sh --width 640 --height 480 --framerate 30 --receiver-ip 10.5.1.21 --receiver-port 5554 --use-d435i
+./run_example.sh --width 640 --height 480 --framerate 30 --receiver-ip 10.11.7.4 --receiver-port 5554 --use-d435i
 ```
 **Stop the streamer:**
 ```bash
@@ -47,9 +47,9 @@ docker kill video-streamer
 ---
 
 ### **Using H.264 Encoding**  
-#### **Edge (Receiver-Transcoder)**
+#### **Edge Server (Receiver-Transcoder)**
 ```bash
-./run_example_edge.sh --stream-name go1_camera --enable-monitoring true --webrtc-additional-hosts 10.5.1.21 --use-h264
+./run_example_edge.sh --stream-name go1_camera --enable-monitoring --webrtc-additional-hosts 10.5.1.21 --use-h264
 ```
 **Stop the process:**
 ```bash
@@ -59,7 +59,7 @@ docker kill video-streamer
 #### **Robot (Streamer)**
 ```bash
 cd streamer
-./run_example.sh --width 1280 --height 720 --framerate 30 --receiver-ip 10.5.1.21 --receiver-port 5554 --use-d435i --use-h264 --bitrate 5000
+./run_example.sh --width 1280 --height 720 --framerate 30 --receiver-ip 10.11.7.4 --receiver-port 5554 --use-d435i --use-h264 --bitrate 5000
 ```
 **Stop the streamer:**
 ```bash
