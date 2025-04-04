@@ -4,6 +4,8 @@ import time
 import traceback
 import logging
 from functools import partial
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -15,6 +17,9 @@ accumulated_bytes = 0
 frame_count = 0  
 MONITOR_INTERVAL = 1.0
 
+# Global InfluxDB writer/client
+influx_writer = None
+influx_client = None
 
 # Initialize logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -37,7 +42,42 @@ def on_message(bus, message, loop):
         logger.warning(f"{warn.message}")
         logger.info(f"{debug}")
 
-def monitoring_probe(pad, info, is_fps=False):
+def init_influx_writer():
+    """Initialize the InfluxDB writer from environment variables."""
+    global influx_writer, influx_client
+    try:
+        influxdb_url = os.environ["INFLUXDB_URL"]
+        influxdb_token = os.environ["INFLUXDB_TOKEN"]
+        influxdb_org = os.environ["INFLUXDB_ORG"]
+        influxdb_bucket = os.environ["INFLUXDB_BUCKET"]
+
+        influx_client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        influx_writer = influx_client.write_api(write_options=SYNCHRONOUS)
+        logger.info("InfluxDB monitoring export ENABLED.")
+    except KeyError as e:
+        logger.error(f"Missing required InfluxDB environment variable: {e}")
+        influx_writer = None
+
+def export_to_influx(metric: str, value: float):
+    """Send a metric point to InfluxDB if enabled."""
+    global influx_writer
+    if influx_writer is None:
+        return
+    try:
+        point = Point("video_metrics") \
+            .tag("stream", os.getenv("STREAM_NAME", "my_stream")) \
+            .field(metric, value) \
+            .time(time.time_ns(), WritePrecision.NS)
+
+        influx_writer.write(
+            bucket=os.environ["INFLUXDB_BUCKET"],
+            org=os.environ["INFLUXDB_ORG"],
+            record=point
+        )
+    except Exception as e:
+        logger.warning(f"Failed to export {metric} to InfluxDB: {e}")
+
+def monitoring_probe(pad, info, export_to_influxdb, is_fps):
     global bw_start_time, fps_start_time, accumulated_bytes, frame_count
 
     buffer = info.get_buffer()
@@ -51,6 +91,8 @@ def monitoring_probe(pad, info, is_fps=False):
         if current_time - fps_start_time >= MONITOR_INTERVAL:
             fps = frame_count / (current_time - fps_start_time)
             logger.info(f"FPS: {fps:.2f}")
+            if export_to_influxdb:
+                export_to_influx("fps", fps)
             frame_count = 0
             fps_start_time = current_time
     else:
@@ -58,12 +100,14 @@ def monitoring_probe(pad, info, is_fps=False):
         if current_time - bw_start_time >= MONITOR_INTERVAL:
             bandwidth_mbps = (accumulated_bytes * 8) / ((current_time - bw_start_time) * 1_000_000)
             logger.info(f"Bandwidth: {bandwidth_mbps:.2f} Mbps")
+            if export_to_influxdb:
+                export_to_influx("bandwidth_mbps", bandwidth_mbps)
             accumulated_bytes = 0
             bw_start_time = current_time
 
     return Gst.PadProbeReturn.OK
 
-def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264):
+def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264, export_to_influxdb, is_fps=False):
     """Sets up the GStreamer pipeline for video reception and transcoding."""
     Gst.init(None)
 
@@ -131,14 +175,14 @@ def start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port,
         if udpsrc:
             src_pad = udpsrc.get_static_pad("src")
             if src_pad:
-                src_pad.add_probe(Gst.PadProbeType.BUFFER, partial(monitoring_probe, is_fps=False))
+                src_pad.add_probe(Gst.PadProbeType.BUFFER, partial(monitoring_probe, export_to_influxdb=export_to_influxdb, is_fps=False))
 
         # FPS probe (after decoding)
         jpegdec = pipeline.get_by_name("jpeg_decoder")
         if jpegdec:
             src_pad = jpegdec.get_static_pad("src")
             if src_pad:
-                src_pad.add_probe(Gst.PadProbeType.BUFFER, partial(monitoring_probe, is_fps=True))
+                src_pad.add_probe(Gst.PadProbeType.BUFFER, partial(monitoring_probe, export_to_influxdb=export_to_influxdb, is_fps=True))
 
     else:
         logger.info("Monitoring is DISABLED.")
@@ -169,8 +213,8 @@ if __name__ == "__main__":
     srt_port = int(os.getenv("SRT_PORT", 8890))
     stream_name = os.getenv("STREAM_NAME", "my_stream")
     
-    # Enable monitoring only if explicitly set to "true"
     enable_monitoring = os.getenv("ENABLE_MONITORING", "false").lower() == "true"
+    export_to_influxdb = os.getenv("EXPORT_TO_INFLUXDB", "false").lower() == "true"
 
     logger.info("Video Receiver and Transcoder Configuration:")
     print(f"  Listening port: {port}")
@@ -180,8 +224,12 @@ if __name__ == "__main__":
     print(f"  Mediamtx server: {srt_ip}:{srt_port}")
     print(f"  Stream name: {stream_name}")
     print(f"  Monitoring: {'Enabled' if enable_monitoring else 'Disabled'}")
+
+    if export_to_influxdb:
+        init_influx_writer()
+
     if use_h264:
         print("  Rceived stream is H.264 encoded.")
 
     # Start the receiver
-    start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264)
+    start_receiver(port, width, height, bitrate, speed_preset, srt_ip, srt_port, stream_name, enable_monitoring, use_h264, export_to_influxdb=export_to_influxdb)

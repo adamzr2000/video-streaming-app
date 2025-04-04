@@ -43,6 +43,13 @@ services:
       - SRT_PORT=8890
       - STREAM_NAME=test_stream
       - ENABLE_MONITORING=true
+      - EXPORT_TO_INFLUXDB=true
+      - INFLUXDB_URL=http://192.168.1.166:8088
+      - INFLUXDB_TOKEN=desire6g2024;
+      - INFLUXDB_ORG=desire6g
+      - INFLUXDB_BUCKET=infrastructure-monitoring
+    volumes:
+      - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py    
     depends_on:
       - mediamtx
     restart: always

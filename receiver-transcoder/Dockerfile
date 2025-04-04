@@ -32,7 +32,7 @@ WORKDIR /app
 COPY app/video_receiver_transcoder.py .
 
 # Install necessary Python packages
-RUN pip3 install pycairo PyGObject
+RUN pip3 install pycairo PyGObject influxdb-client
 
 # Set the default command to run the script
 CMD ["python3", "-u", "video_receiver_transcoder.py"]
