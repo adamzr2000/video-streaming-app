@@ -27,7 +27,7 @@ docker compose down
 ### **Using MJPEG Encoding**  
 #### **Edge Server (Receiver-Transcoder)**
 ```bash
-./run_example_edge.sh --stream-name go1_camera --enable-monitoring --webrtc-additional-hosts 10.5.1.21
+./run_example_edge.sh --stream-name go1_camera --enable-monitoring --export-to-influxdb --webrtc-additional-hosts 10.5.1.21
 ```
 **Stop the process:**
 ```bash

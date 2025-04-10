@@ -27,6 +27,11 @@ services:
       - STREAM_NAME=${STREAM_NAME}
       - ENABLE_MONITORING=${ENABLE_MONITORING}
       - USE_H264=${USE_H264}
+      - EXPORT_TO_INFLUXDB=${EXPORT_TO_INFLUXDB}
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}   
     volumes:
       - ./receiver-transcoder/app/video_receiver_transcoder.py:/app/video_receiver_transcoder.py
     depends_on:
