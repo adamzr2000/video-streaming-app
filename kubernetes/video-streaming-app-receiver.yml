@@ -92,6 +92,10 @@ spec:
       labels:
         app: receiver-transcoder
     spec:
+      initContainers:
+      - name: wait-for-mediamtx
+        image: curlimages/curl:latest
+        command: ['sh', '-c', 'until nslookup mediamtx.default.svc.cluster.local; do echo waiting for mediamtx; sleep 2; done']
       containers:
       - name: video-receiver-transcoder
         tty: true

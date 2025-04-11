@@ -25,3 +25,8 @@ data:
   ENABLE_MONITORING: "true"
   USE_H264: "false"
   BITRATE: "10000"
+  EXPORT_TO_INFLUXDB: "false"
+  INFLUXDB_URL: "http://10.5.1.21:8088"
+  INFLUXDB_TOKEN: "desire6g2024;"
+  INFLUXDB_ORG: "desire6g"
+  INFLUXDB_BUCKET: "infrastructure-monitoring"
