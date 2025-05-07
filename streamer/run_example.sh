@@ -51,7 +51,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Run the Docker container
-docker run --rm -it \
+docker run --rm -d \
   --privileged \
   --name video-streamer \
   -v ./app:/app/ \
