@@ -9,7 +9,8 @@ services:
       - WIDTH=1920
       - HEIGHT=1080
       - FRAMERATE=30
-      - RECEIVER_IP=receiver-transcoder
+      # - RECEIVER_IP=receiver-transcoder
+      - RECEIVER_IP=10.5.98.250
       - RECEIVER_PORT=5554
       - DEVICE=/dev/video0
       - USE_D435I=false
@@ -18,7 +19,7 @@ services:
     restart: always
 
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:1.11.3
     container_name: mediamtx
     ports:
       - "8890:8890/udp" # SRT
@@ -41,7 +42,7 @@ services:
       - SPEED_PRESET=ultrafast
       - SRT_IP=mediamtx
       - SRT_PORT=8890
-      - STREAM_NAME=test_stream
+      - STREAM_NAME=go1_camera
       - ENABLE_MONITORING=true
       - EXPORT_TO_INFLUXDB=false
       - INFLUXDB_URL=http://10.5.98.250:8086

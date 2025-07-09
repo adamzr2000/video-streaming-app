@@ -54,8 +54,8 @@ done
 docker run --rm -d \
   --privileged \
   --name video-streamer \
+  --network host \
   -v ./app:/app/ \
-  --group-add video \
   -e WIDTH="$WIDTH" \
   -e HEIGHT="$HEIGHT" \
   -e FRAMERATE="$FRAMERATE" \
