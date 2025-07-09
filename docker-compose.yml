@@ -43,7 +43,7 @@ services:
       - SRT_PORT=8890
       - STREAM_NAME=test_stream
       - ENABLE_MONITORING=true
-      - EXPORT_TO_INFLUXDB=true
+      - EXPORT_TO_INFLUXDB=false
       - INFLUXDB_URL=http://10.5.98.250:8086
       - INFLUXDB_TOKEN=desire6g2024;
       - INFLUXDB_ORG=desire6g
